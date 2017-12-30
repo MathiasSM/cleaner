@@ -1,6 +1,9 @@
+import { Meteor } from 'meteor/meteor';
+import { Mongo, MongoInternals } from 'meteor/mongo';
+
 if (Meteor.isServer) {
   const _resetDatabase = function (options) {
-    if (process.env.NODE_ENV !== 'development') {
+    if (Meteor.isDevelopment) {
       throw new Error(
         'resetDatabase is not allowed outside of a development mode. ' +
         'Aborting.'
@@ -14,21 +17,15 @@ if (Meteor.isServer) {
     }
 
     var db = MongoInternals.defaultRemoteCollectionDriver().mongo.db;
-    var getCollections = Meteor.wrapAsync(db.collections, db);
-    var collections = getCollections();
-    var appCollections = _.reject(collections, function (col) {
-      return col.collectionName.indexOf('velocity') === 0 ||
-        excludedCollections.indexOf(col.collectionName) !== -1;
-    });
-
-    _.each(appCollections, function (appCollection) {
-      var remove = Meteor.wrapAsync(appCollection.remove, appCollection);
-      remove({});
-    });
+    db.getCollectionNames.forEach(
+      function(cname) {
+        db[cname].remove({});
+      }
+    );
   };
 
   Meteor.methods({
-    'xolvio:cleaner/resetDatabase': function (options) {
+    'testing/resetDatabase': function (options) {
       _resetDatabase(options);
     }
   });
@@ -41,6 +38,6 @@ if (Meteor.isServer) {
 }
 if (Meteor.isClient) {
   resetDatabase = function(options, callback) {
-    Meteor.call('xolvio:cleaner/resetDatabase', options, callback);
+    Meteor.call('testing/resetDatabase', options, callback);
   }
 }
